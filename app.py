@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, make_response, request
+from flask import Flask, jsonify, request
 import json
 import hashlib
 
@@ -29,7 +29,7 @@ def get_user(user_id):
         user.pop('password')
         return jsonify(user), 200
 
-    return make_response(jsonify({'error': 'User not found'}), 404)
+    return jsonify({'error': 'User not found'}), 404
 
 
 @app.route('/user/', methods=['POST'])
@@ -37,9 +37,9 @@ def create_user():
     users = load_users('user.json')
 
     if not request.json['login'] or not request.json.get('password'):
-        return make_response(jsonify({'error': 'Invalid user data'}), 400)
+        return jsonify({'error': 'Invalid user data'}), 400
     elif request.json['login'] in [user['login'] for user in users.values()]:
-        return make_response(jsonify({'error': 'User already exist'}), 400)
+        return jsonify({'error': 'User already exist'}), 400
 
     password_hash = hashlib.sha224(
         request.json.get('password').encode('utf-8')
@@ -62,11 +62,11 @@ def update_user(user_id):
     users = load_users('user.json')
 
     if not users.get(user_id):
-        return make_response(jsonify({'error': 'User not found'}), 404)
+        return jsonify({'error': 'User not found'}), 404
     elif not request.json:
-        return make_response(jsonify({'error': 'No new user information'}), 400)
+        return jsonify({'error': 'No new user information'}), 400
     elif request.json['login'] in [user['login'] for user in users.values()]:
-        return make_response(jsonify({'error': 'User already exist'}), 400)
+        return jsonify({'error': 'User already exist'}), 400
 
     users[user_id]['login'] = request.json.get('login', users[user_id]['login'])
     if request.json.get('password'):
@@ -86,7 +86,7 @@ def delete_user(user_id):
     users = load_users('user.json')
 
     if not users.get(user_id):
-        return make_response(jsonify({'error': 'User not found'}), 404)
+        return jsonify({'error': 'User not found'}), 404
     users.pop(user_id)
 
     save_users('user.json', users)
