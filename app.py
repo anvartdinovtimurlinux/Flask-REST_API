@@ -22,9 +22,9 @@ def get_user(user_id):
         users = json.load(f)
 
     user = users.get(user_id)
+    user.pop('password')
     if user:
-        user['user_id'] = user_id
-        return jsonify({'user': user})
+        return jsonify(user)
     abort(404)
 
 
@@ -47,7 +47,9 @@ def create_user():
 
     with open('user.json', 'w', encoding='utf-8') as f:
         json.dump(users, f)
-    return jsonify({id_: user}), 201
+
+    user.pop('password')
+    return jsonify({'user_id': id_}), 201
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
@@ -69,7 +71,9 @@ def update_user(user_id):
 
     with open('user.json', 'w', encoding='utf-8') as f:
         json.dump(users, f)
-    return jsonify({'user': users[user_id]})
+
+    users[user_id].pop('password')
+    return jsonify(users[user_id])
 
 
 @app.route('/user/<user_id>', methods=['DELETE'])
@@ -79,7 +83,7 @@ def delete_user(user_id):
 
     if not users.get(user_id):
         abort(404)
-    users.remove(users(user_id))
+    users.pop(user_id)
 
     with open('user.json', 'w', encoding='utf-8') as f:
         json.dump(users, f)
