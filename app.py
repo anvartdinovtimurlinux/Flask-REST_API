@@ -5,33 +5,41 @@ import hashlib
 app = Flask(__name__)
 
 
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
+def load_users(path_to_file):
+    with open(path_to_file, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def save_users(path_to_file, data):
+    with open(path_to_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
 
 
 @app.route('/user/', methods=['GET'])
 def get_users():
-    with open('user.json', 'r', encoding='utf-8') as f:
-        return jsonify({'users': json.load(f)})
+    return load_users('user.json'), 200
 
 
 @app.route('/user/<user_id>', methods=['GET'])
 def get_user(user_id):
-    with open('user.json', 'r', encoding='utf-8') as f:
-        users = json.load(f)
+    users = load_users('user.json')
 
     user = users.get(user_id)
-    user.pop('password')
     if user:
-        return jsonify(user)
-    abort(404)
+        user.pop('password')
+        return jsonify(user), 200
+
+    return make_response(jsonify({'error': 'User not found'}), 404)
 
 
 @app.route('/user/', methods=['POST'])
 def create_user():
-    with open('user.json', 'r', encoding='utf-8') as f:
-        users = json.load(f)
+    users = load_users('user.json')
+
+    if not request.json['login'] or not request.json.get('password'):
+        return make_response(jsonify({'error': 'Invalid user data'}), 400)
+    elif request.json['login'] in [user['login'] for user in users.values()]:
+        return make_response(jsonify({'error': 'User already exist'}), 400)
 
     password_hash = hashlib.sha224(
         request.json.get('password').encode('utf-8')
@@ -39,28 +47,26 @@ def create_user():
     user = {
         'login': request.json['login'],
         'password': password_hash,
-        'name': request.json.get('name'),
+        'name': request.json.get('name', request.json['login']),
     }
 
     id_ = str(max(int(key) for key in users.keys()) + 1)
     users[id_] = user
 
-    with open('user.json', 'w', encoding='utf-8') as f:
-        json.dump(users, f)
-
-    user.pop('password')
-    return jsonify({'user_id': id_}), 201
+    save_users('user.json', users)
+    return jsonify({'user_id': id_}), 200
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
 def update_user(user_id):
-    with open('user.json', 'r', encoding='utf-8') as f:
-        users = json.load(f)
+    users = load_users('user.json')
 
     if not users.get(user_id):
-        abort(404)
-    if not request.json:
-        abort(400)
+        return make_response(jsonify({'error': 'User not found'}), 404)
+    elif not request.json:
+        return make_response(jsonify({'error': 'No new user information'}), 400)
+    elif request.json['login'] in [user['login'] for user in users.values()]:
+        return make_response(jsonify({'error': 'User already exist'}), 400)
 
     users[user_id]['login'] = request.json.get('login', users[user_id]['login'])
     if request.json.get('password'):
@@ -69,25 +75,22 @@ def update_user(user_id):
         ).hexdigest()
     users[user_id]['name'] = request.json.get('name', users[user_id]['name'])
 
-    with open('user.json', 'w', encoding='utf-8') as f:
-        json.dump(users, f)
+    save_users('user.json', users)
 
     users[user_id].pop('password')
-    return jsonify(users[user_id])
+    return jsonify(users[user_id]), 201
 
 
 @app.route('/user/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    with open('user.json', 'r', encoding='utf-8') as f:
-        users = json.load(f)
+    users = load_users('user.json')
 
     if not users.get(user_id):
-        abort(404)
+        return make_response(jsonify({'error': 'User not found'}), 404)
     users.pop(user_id)
 
-    with open('user.json', 'w', encoding='utf-8') as f:
-        json.dump(users, f)
-    return jsonify({'result': True})
+    save_users('user.json', users)
+    return jsonify({'result': 'User deleted'}), 200
 
 
 if __name__ == '__main__':
