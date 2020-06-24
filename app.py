@@ -15,6 +15,17 @@ def save_users(path_to_file, data):
         json.dump(data, f)
 
 
+def create_user_dict(name, login, password=None):
+    user = {
+        'login': login,
+        'name': name,
+    }
+    if password:
+        user['password'] = hashlib.sha224(password.encode('utf-8')).hexdigest()
+
+    return user
+
+
 @app.route('/user/', methods=['GET'])
 def get_users():
     return load_users('user.json'), 200
@@ -41,20 +52,16 @@ def create_user():
     elif request.json['login'] in [user['login'] for user in users.values()]:
         return jsonify({'error': 'User already exist'}), 400
 
-    password_hash = hashlib.sha224(
-        request.json.get('password').encode('utf-8')
-    ).hexdigest()
-    user = {
-        'login': request.json['login'],
-        'password': password_hash,
-        'name': request.json.get('name', request.json['login']),
-    }
-
-    id_ = str(max(int(key) for key in users.keys()) + 1)
-    users[id_] = user
+    user = create_user_dict(
+        request.json.get('login'),
+        request.json.get('password'),
+        request.json.get('name', request.json.get('login'))
+    )
+    user_id = str(max(int(key) for key in users.keys()) + 1)
+    users[user_id] = user
 
     save_users('user.json', users)
-    return jsonify({'user_id': id_}), 200
+    return jsonify({'user_id': user_id}), 200
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
@@ -66,19 +73,18 @@ def update_user(user_id):
     elif not request.json:
         return jsonify({'error': 'No new user information'}), 400
     elif request.json['login'] in [user['login'] for user in users.values()]:
-        return jsonify({'error': 'User already exist'}), 400
+        return jsonify({'error': 'This login already exists'}), 400
 
-    users[user_id]['login'] = request.json.get('login', users[user_id]['login'])
-    if request.json.get('password'):
-        users[user_id]['password'] = hashlib.sha224(
-            request.json.get('password').encode('utf-8')
-        ).hexdigest()
-    users[user_id]['name'] = request.json.get('name', users[user_id]['name'])
-
+    user = create_user_dict(
+        request.json.get('login', users[user_id]['login']),
+        request.json.get('password'),
+        request.json.get('name')
+    )
+    users[user_id].update(user)
     save_users('user.json', users)
 
-    users[user_id].pop('password')
-    return jsonify(users[user_id]), 201
+    user.pop('password')
+    return jsonify(user), 201
 
 
 @app.route('/user/<user_id>', methods=['DELETE'])
