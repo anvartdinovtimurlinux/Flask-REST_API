@@ -1,1 +1,12 @@
-{"0": {"login": "pupyrik", "name": "pup", "password": "d676729d4a84ec7921033eee25251af7791c4843639387a273c82a11"}, "1": {"login": "timmy", "name": "Vasin Tim", "password": "dc13515c1126719171c0acf6989b283436ceaea9c9fbe71996544b8e"}}
+{
+  "0": {
+    "login": "pupyrik",
+    "name": "pup",
+    "password": "d676729d4a84ec7921033eee25251af7791c4843639387a273c82a11"
+  },
+  "1": {
+    "login": "timmy",
+    "name": "Vasin Tim",
+    "password": "dc13515c1126719171c0acf6989b283436ceaea9c9fbe71996544b8e"
+  }
+}
